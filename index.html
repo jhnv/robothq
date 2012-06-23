@@ -28,8 +28,15 @@
 <body>
 
   <div class="container">
-    <h1>Posts</h1>      
-    <div class="posts"></div>
+    <h1>Robot HQ</h1>      
+    <section id="main">
+      <div class="posts-container"></div>
+    </section>
+    <section id="side">
+      <h2>Login stuff</h2>
+      <h2>Active posts</h2>
+      <h2>Robot URLs</h2>
+    </section>
   </div>
 
   <script type="text/template" id="postList-template">
@@ -39,7 +46,7 @@
   </script>
 
   <script type="text/template" id="post-template">
-      <%= content %>
+      <%= content %> / <a href="#post/<%= num %>">Read comments</a>
   </script>
 
 </body>

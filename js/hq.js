@@ -1,12 +1,11 @@
 $(function() {
 
-
 /* ----------------- MODELS ---------------- */
 
   var Post = StackMob.Model.extend({
     schemaName: 'post'
   });
-  
+ 
 
 /* ----------------- COLLECTIONS ---------------- */
 
@@ -18,7 +17,7 @@ $(function() {
 
   var PostView = Backbone.View.extend({
     
-    tagName: 'li', // name of (orphan) root tag in this.el
+    tagName: 'div', // name of (orphan) root tag in this.el
     className: 'post',    
     template: _.template($('#post-template').html()),
 
@@ -35,7 +34,7 @@ $(function() {
   
   var PostListView = Backbone.View.extend({
     
-    el: $('.posts'), //attach to .container
+    el: $('.posts-container'), //attach to .container
     
     events: {
       'click button#add': 'addPost'
@@ -45,8 +44,7 @@ $(function() {
     
     initialize: function(){
       
-      var self = this;      
-      // every function that uses 'this' as the current object should be in here
+      var self = this;
       _.bindAll(this, 'render', 'addPost', 'appendPost');
 
       // RETRIEVE COLLECTION INSERT STACKMOB CODE
@@ -87,6 +85,7 @@ $(function() {
       $posts = this.$('ul');
 
       collection.each(function (post) {
+        
         // for each post create a new view, pass in the model and collection
         var view = new PostView({
           model: post,
@@ -103,27 +102,51 @@ $(function() {
     
     addPost: function(){
       var self = this;
-      var content = $('textarea').val();
+      content = $('textarea').val();
       
-      if(content !== '') {
+      // get the highest current post numeric "URL"
+      var numQuery = new StackMob.Collection.Query();
+      numQuery.orderDesc('num').setRange(0, 10);
+      
+      var postNums = new PostList();
+      postNums.query(numQuery, {
+        success: function(collection) {
+          
+          newPostNum = collection.at(0).get('num') + 1;
 
-        var post = new Post({content: content});
+          // create the new post, save to StackMob
+          if(content !== '') {
 
-        post.create({
-          success: function(model) {
+            var post = new Post({
+              content: content,
+              num: newPostNum
+            });
 
-            // what'd we get back?
-            console.debug('ID is: ' + model.get('post_id'));
-            console.debug('Content is: ' + model.get('content'));
-            
-            // add to collection
-            self.collection.add(post); 
-          }
-        });
+            post.create({
+              success: function(model) {
 
-      } else {
-        alert('Woops, enter some content!');
-      }
+                // what'd we get back?
+                console.debug('ID is: ' + model.get('post_id'));
+                console.debug('Post num is: ' + model.get('num'));
+                console.debug('Content is: ' + model.get('content'));
+
+                
+                // add to collection
+                self.collection.add(post); 
+              }
+            });
+
+          } else {
+            alert('Woops, enter some content!');
+          } // close check for content
+
+        },
+        error: function () {
+          console.log("Unable to fetch new post num.");
+          return false;
+        }
+
+      });
 
     },
 
@@ -132,9 +155,37 @@ $(function() {
         model: post
       });
       $('ul', this.el).append(postView.render().el);
-    }
-  });
-    
-  window.postListView = new PostListView();
+    }    
 
+  });
+
+
+
+/* ----------------- ROUTES ---------------- */
+
+  var HQ = Backbone.Router.extend({
+
+    routes: {
+      '': 'home',
+      'post/:num': 'post',  // #post/num
+    },
+
+    home: function() {
+
+      // create view
+      window.postListView = new PostListView();
+    
+    },
+
+    post: function(num) {
+      // empty posts div. must be better ways to clear templates
+      $('.posts').empty();
+      window.indivPostView = new PostView();
+    }
+
+  });
+
+new HQ();
+Backbone.history.start({pushState: false});
+  
 });
